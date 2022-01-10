@@ -1,0 +1,36 @@
+name: Publish Alfred Workflow
+
+on: # yamllint disable-line rule:truthy
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Create release from tag
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Get bjw-s-bot token
+        id: get-app-token
+        uses: getsentry/action-github-app-token@v1
+        with:
+          app_id: ${{ secrets.BJWS_APP_ID }}
+          private_key: ${{ secrets.BJWS_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ steps.get-app-token.outputs.token }}
+          fetch-depth: 1
+
+      - name: Build Alfred Workflow
+        id: alfred_builder
+        uses: mperezi/build-alfred-workflow@v1
+        with:
+          workflow_dir: src
+          exclude_patterns: 'README.md screenshot.png *.pyc *__pycache__/*'
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          token: ${{ steps.get-app-token.outputs.token }}
+          files: ${{ steps.alfred_builder.outputs.workflow_file }}
